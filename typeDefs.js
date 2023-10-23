@@ -4,23 +4,36 @@ const typeDefs = gql`
     query: Query
   }
   type Query {
-    books: [Book!]!
-    authors: [Author!]!
-    users: [User!]!
+    books(searchQuery: String! = ""): [Book!]!
+    authors(searchQuery: String! = ""): [Author!]!
+    users(searchQuery: String! = ""): [User!]!
+    book(id: ID!): Book
+    author(id: ID!): Author
+    user(id: ID!): User
+    anything(id: ID!): Anything
   }
+
+  union Anything = Book | Author | User
+  
   type Book {
+    id: ID!
     title: String!
     cover: Image!
+    description: String!
     author: Author
   }
   type Author {
+    id: ID!
     name: String!
     photo: Image!
+    bio: String!
     books: [Book!]!
   }
   type User {
+    id: ID!
     name: String!
     email: String!
+    info: String!
     avatar: Avatar!
   }
   type Image {
