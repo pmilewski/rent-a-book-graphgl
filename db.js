@@ -274,63 +274,240 @@ const data = {
   ],
   bookIdsByAuthorId: {
     "1": ["1", "2", "3", "4", "5", "6", "7"],
-    "2": ["8", "9", "10", "11", "12", "13", "14", "15"],
-    "3": ["16", "17", "18", "19", "20"]
-  }
+    "2": ["8", "9", "10", "11", "12", "13", "14"],
+    "3": ["15", "16", "17", "18", "19", "20"]
+  },
+  bookCopies: [
+    {
+      ownerId: "1",
+      borrowerId: "2",
+      bookId: "1"
+    },
+    {
+      ownerId: "1",
+      borrowerId: "2",
+      bookId: "2"
+    },
+    {
+      ownerId: "1",
+      borrowerId: null,
+      bookId: "3"
+    },
+    {
+      ownerId: "1",
+      borrowerId: "3",
+      bookId: "4"
+    },
+    {
+      ownerId: "1",
+      borrowerId: null,
+      bookId: "5"
+    },
+    {
+      ownerId: "1",
+      borrowerId: "4",
+      bookId: "6"
+    },
+    {
+      ownerId: "1",
+      borrowerId: null,
+      bookId: "7"
+    },
+    {
+      ownerId: "2",
+      borrowerId: null,
+      bookId: "8"
+    },
+    {
+      ownerId: "2",
+      borrowerId: "3",
+      bookId: "9"
+    },
+    {
+      ownerId: "2",
+      borrowerId: "4",
+      bookId: "10"
+    },
+    {
+      ownerId: "3",
+      borrowerId: null,
+      bookId: "1"
+    },
+    {
+      ownerId: "3",
+      borrowerId: "4",
+      bookId: "4"
+    },
+    {
+      ownerId: "3",
+      borrowerId: "2",
+      bookId: "11"
+    },
+    {
+      ownerId: "3",
+      borrowerId: "2",
+      bookId: "12"
+    },
+    {
+      ownerId: "3",
+      borrowerId: null,
+      bookId: "13"
+    },
+    {
+      ownerId: "3",
+      borrowerId: null,
+      bookId: "14"
+    },
+    {
+      ownerId: "3",
+      borrowerId: "1",
+      bookId: "15"
+    },
+    {
+      ownerId: "4",
+      borrowerId: null,
+      bookId: "1"
+    },
+    {
+      ownerId: "4",
+      borrowerId: null,
+      bookId: "8"
+    },
+    {
+      ownerId: "4",
+      borrowerId: "1",
+      bookId: "16"
+    },
+    {
+      ownerId: "4",
+      borrowerId: "1",
+      bookId: "17"
+    },
+    {
+      ownerId: "4",
+      borrowerId: "1",
+      bookId: "18"
+    },
+    {
+      ownerId: "4",
+      borrowerId: null,
+      bookId: "19"
+    },
+    {
+      ownerId: "4",
+      borrowerId: null,
+      bookId: "20"
+    }
+  ]
 };
 
-const toIndex = id => parseInt(id, 10) - 1;
-const toId = index => `${index + 1}`;
+const toIndex = externalId => parseInt(externalId, 10) - 1;
+const toId = internalId => `${internalId + 1}`;
 
 const getAuthorIdByBookId = bookId =>
   Object.entries(data.bookIdsByAuthorId).find(([authorId, bookIds]) =>
     bookIds.includes(bookId)
-  )[0];[]
+  )[0];
 
-const getBookById = id => {
-  const index = toIndex(id);
-  if (index < 0 || index >= data.books.length) {
-    return null;
-  }
-
-  return {
-    ...data.books[toIndex(id)],
-    id,
-    authorId: getAuthorIdByBookId(id)
-  }
-};
+const getBookById = id => ({
+  ...data.books[toIndex(id)],
+  resourceType: "Book",
+  id,
+  authorId: getAuthorIdByBookId(id)
+});
 const getAllBooks = () =>
   data.books.map((book, index) => getBookById(toId(index)));
 
-const getAuthorById = id => {
-  const index = toIndex(id);
-  if (index < 0 || index >= data.authors.length) {
-    return null;
-  }
-
-  return {
-    ...data.authors[toIndex(id)],
-    id,
-    bookIds: data.bookIdsByAuthorId[id]
-  }
-};
+const getAuthorById = id => ({
+  ...data.authors[toIndex(id)],
+  resourceType: "Author",
+  id,
+  bookIds: data.bookIdsByAuthorId[id]
+});
 
 const getAllAuthors = () =>
   data.authors.map((author, index) => getAuthorById(toId(index)));
 
-const getUserById = id => {
-  const index = toIndex(id);
-  if (index < 0 || index >= data.users.length) {
-    return null;
-  }
-
-  return {
+const getUserById = id => ({
   ...data.users[toIndex(id)],
+  resourceType: "User",
   id
-}};
+});
 
 const getAllUsers = () =>
   data.users.map((user, index) => getUserById(toId(index)));
+
+const getBookCopyById = id => ({
+  ...data.bookCopies[toIndex(id)],
+  resourceType: "BookCopy",
+  id
+});
+
+const getAllBookCopies = () =>
+  data.bookCopies.map((bookCopy, index) => getBookCopyById(toId(index)));
+
+const getBookCopiesByBookId = bookId =>
+  getAllBookCopies().filter(bookCopy => bookCopy.bookId === bookId);
+
+const getBookCopiesByOwnerId = ownerId =>
+  getAllBookCopies().filter(bookCopy => bookCopy.ownerId === ownerId);
+
+const getBookCopiesByBorrowerId = borrowerId =>
+  getAllBookCopies().filter(bookCopy => bookCopy.borrowerId === borrowerId);
+
+const borrowBookCopy = (bookCopyId, borrowerId) => {
+  const index = toIndex(bookCopyId);
+  const borrowerIndex = toIndex(borrowerId);
+  if (index < 0 || index >= data.bookCopies.length) {
+    throw new Error(`No book copy`);
+  }
+  const bookCopy = data.bookCopies[index];
+  
+  if (!!bookCopy.borrowerId) {
+    throw new Error(`Cannot borrow the book copy. Book copy is already borrowed`);
+  }
+  if (borrowerIndex < 0 || borrowerIndex >= data.users.length) {
+    throw new Error(`No user`);
+  }
+  if (bookCopy.ownerId === borrowerId) {
+    throw new Error(`Cannot borrow the book copy. User is the owner`);
+  }
+
+  bookCopy.borrowerId = borrowerId;
+}
+
+const returnBookCopy = (bookCopyId, borrowerId) => {
+  const index = toIndex(bookCopyId);
+  if (index < 0 || index >= data.bookCopies.length) {
+    throw new Error(`No book copy`);
+  }
+  const bookCopy = data.bookCopies[index];
+  
+  if (!bookCopy.borrowerId) {
+    throw new Error(`Cannot return the book copy. Book copy is not borrowed`);
+  }
+
+  if (bookCopy.borrowerId !== borrowerId) {
+    throw new Error(`Cannot return the book copy. User is not the borrower`);
+  }
+
+  bookCopy.borrowerId = null;
+}
+
+const getResourceByIdAndType = (id, type) => {
+  switch (type) {
+    case "Book":
+      return getBookById(id);
+    case "Author":
+      return getAuthorById(id);
+    case "User":
+      return getUserById(id);
+    case "BookCopy":
+      return getBookCopyById(id);
+    default:
+      return null;
+  }
+}
 
 const db = {
   getAllBooks,
@@ -338,6 +515,14 @@ const db = {
   getAllUsers,
   getBookById,
   getAuthorById,
-  getUserById
+  getUserById,
+  getBookCopyById,
+  getAllBookCopies,
+  getBookCopiesByBookId,
+  getBookCopiesByOwnerId,
+  getBookCopiesByBorrowerId,
+  borrowBookCopy,
+  returnBookCopy,
+  getResourceByIdAndType
 };
 module.exports = db;
