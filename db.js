@@ -1,5 +1,5 @@
 const data = {
-  books: [
+  Book: [
     {
       id: "1",
       resourceType: "Book",
@@ -251,7 +251,7 @@ const data = {
       And the world is still at war.`
     }
   ],
-  authors: [
+  Author: [
     {
       id: "1",
       resourceType: "Author",
@@ -300,7 +300,7 @@ const data = {
       The English translation of Sapkowski's novel Blood of Elves won the David Gemmell Legends Award in 2009.`
     }
   ],
-  users: [
+  User: [
     {
       id: "1",
       resourceType: "User",
@@ -346,12 +346,7 @@ const data = {
       }
     }
   ],
-  bookIdsByAuthorId: {
-    "1": ["1", "2", "3", "4", "5", "6", "7"],
-    "2": ["8", "9", "10", "11", "12", "13", "14"],
-    "3": ["15", "16", "17", "18", "19", "20"]
-  },
-  bookCopies: [
+  BookCopy: [
     {
       id: "1",
       resourceType: "BookCopy",
@@ -523,50 +518,39 @@ const data = {
   ]
 };
 
-const toIndex = externalId => parseInt(externalId, 10) - 1;
-const toId = internalId => `${internalId + 1}`;
+function findResourceByIdAndType(id, resourceType) {
+  const resources = findAllResourcesByType(resourceType);
+  const resource = resources.find(resource => resource.id === id);
+  if (!resource) {
+    throw new Error(`Could not find resource by id '${id}'`);
+  }
+  return resource;
+}
 
-const getAuthorIdByBookId = bookId =>
-  Object.entries(data.bookIdsByAuthorId).find(([authorId, bookIds]) =>
-    bookIds.includes(bookId)
-  )[0];
+function findAllResourcesByType(resourceType) {
+  const resources = data[resourceType];
+  if (!resources) {
+    throw new Error(`Unrecognized resource type '${resourceType}'`);
+  }
+  return resources;
+}
 
-const getBookById = id => ({
-  ...data.books[toIndex(id)],
-  id,
-  resourceType: "Book",
-  authorId: getAuthorIdByBookId(id)
-});
-const getAllBooks = () =>
-  data.books.map((book, index) => getBookById(toId(index)));
+const getBookById = id => getResourceByIdAndType(id, "Book");
+const getAllBooks = () => getAllResourcesByType("Book");
+const getBooksByAuthorId = authorId =>
+  getAllBooks().filter(book => book.authorId === authorId);
 
-const getAuthorById = id => ({
-  ...data.authors[toIndex(id)],
-  id,
-  resourceType: "Author",
-  bookIds: data.bookIdsByAuthorId[id]
-});
+const getAuthorById = id => getResourceByIdAndType(id, "Author");
 
-const getAllAuthors = () =>
-  data.authors.map((author, index) => getAuthorById(toId(index)));
+const getAllAuthors = () => getAllResourcesByType("Author");
 
-const getUserById = id => ({
-  ...data.users[toIndex(id)],
-  id,
-  resourceType: "User"
-});
+const getUserById = id => getResourceByIdAndType(id, "User");
 
-const getAllUsers = () =>
-  data.users.map((user, index) => getUserById(toId(index)));
+const getAllUsers = () => getAllResourcesByType("User");
 
-const getBookCopyById = id => ({
-  ...data.bookCopies[toIndex(id)],
-  id,
-  resourceType: "BookCopy"
-});
+const getBookCopyById = id => getResourceByIdAndType(id, "BookCopy");
 
-const getAllBookCopies = () =>
-  data.bookCopies.map((bookCopy, index) => getBookCopyById(toId(index)));
+const getAllBookCopies = () => getAllResourcesByType("BookCopy");
 
 const getBookCopiesByBookId = bookId =>
   getAllBookCopies().filter(bookCopy => bookCopy.bookId === bookId);
@@ -576,11 +560,7 @@ const getBookCopiesByBorrowerId = borrowerId =>
   getAllBookCopies().filter(bookCopy => bookCopy.borrowerId === borrowerId);
 
 const borrowBookCopy = (bookCopyId, borrowerId) => {
-  const index = toIndex(bookCopyId);
-  if (index < 0 || index >= data.bookCopies.length) {
-    throw new Error("Could not find the book copy.");
-  }
-  const bookCopy = data.bookCopies[index];
+  const bookCopy = findResourceByIdAndType(bookCopyId, "BookCopy");
   if (!!bookCopy.borrowerId) {
     throw new Error("Cannot borrow the book copy. It is already borrowed.");
   }
@@ -588,11 +568,7 @@ const borrowBookCopy = (bookCopyId, borrowerId) => {
 };
 
 const returnBookCopy = (bookCopyId, borrowerId) => {
-  const index = toIndex(bookCopyId);
-  if (index < 0 || index >= data.bookCopies.length) {
-    throw new Error("Could not find the book copy.");
-  }
-  const bookCopy = data.bookCopies[index];
+  const bookCopy = findResourceByIdAndType(bookCopyId, "BookCopy");
   if (!bookCopy.borrowerId) {
     throw new Error("Cannot return the book copy. Nobody borrowed it.");
   }
@@ -604,22 +580,17 @@ const returnBookCopy = (bookCopyId, borrowerId) => {
   bookCopy.borrowerId = null;
 };
 
+function getAllResourcesByType(resourceType) {
+  return [...findAllResourcesByType(resourceType)];
+}
+
 const getResourceByIdAndType = (id, type) => {
-  switch (type) {
-    case "Book": {
-      return getBookById(id);
-    }
-    case "BookCopy": {
-      return getBookCopyById(id);
-    }
-    case "Author": {
-      return getAuthorById(id);
-    }
-    case "User": {
-      return getUserById(id);
-    }
-    default:
-      return null;
+  try {
+    return {
+      ...findResourceByIdAndType(id, type)
+    };
+  } catch (error) {
+    return null;
   }
 };
 
@@ -628,6 +599,7 @@ const db = {
   getAllAuthors,
   getAllUsers,
   getAllBookCopies,
+  getBooksByAuthorId,
   getBookCopiesByBookId,
   getBookCopiesByOwnerId,
   getBookCopiesByBorrowerId,

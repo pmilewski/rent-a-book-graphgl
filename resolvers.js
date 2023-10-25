@@ -1,5 +1,3 @@
-const { borrowBookCopy } = require("./db");
-
 const decodeBase64 = base64String =>
   Buffer.from(base64String, "base64").toString();
 const encodeBase64 = rawString => Buffer.from(rawString).toString("base64");
@@ -82,7 +80,7 @@ const resolvers = {
   },
   Author: {
     id,
-    books: (author, args, { db }) => author.bookIds.map(db.getBookById),
+    books: (author, args, { db }) => db.getBooksByAuthorId(author.id),
     photo: author => ({
       path: author.photoPath
     })
