@@ -544,6 +544,21 @@ function deleteResource(id, resourceType) {
   resources.splice(index, 1);
 }
 
+function updateResource(id, resourceType, resourceData) {
+  const resources = findAllResourcesByType(resourceType);
+  const index = resources.findIndex(resource => resource.id === id);
+  if (index < 0) {
+    throw new Error(`Could not find resource by id '${id}'`);
+  }
+  const existingResource = resources[index];
+  resources[index] = {
+    ...existingResource,
+    ...resourceData,
+    id,
+    resourceType
+  };
+}
+
 const getBookById = id => getResourceByIdAndType(id, "Book");
 const getAllBooks = () => getAllResourcesByType("Book");
 const getBooksByAuthorId = authorId =>
@@ -573,7 +588,10 @@ const borrowBookCopy = (bookCopyId, borrowerId) => {
   if (!!bookCopy.borrowerId) {
     throw new Error("Cannot borrow the book copy. It is already borrowed.");
   }
-  bookCopy.borrowerId = borrowerId;
+  updateBookCopy(bookCopyId, {
+    ...bookCopy,
+    borrowerId
+  })
 };
 
 const returnBookCopy = (bookCopyId, borrowerId) => {
@@ -586,7 +604,10 @@ const returnBookCopy = (bookCopyId, borrowerId) => {
       "Book copy can only be returned by the user who borrowed it."
     );
   }
-  bookCopy.borrowerId = null;
+  updateBookCopy(bookCopyId, {
+    ...bookCopy,
+    borrowerId: null
+  })
 };
 
 function getAllResourcesByType(resourceType) {
@@ -603,9 +624,64 @@ const getResourceByIdAndType = (id, type) => {
   }
 };
 
+function updateBookCopy(id, bookCopyData) { 
+  const { ownerId, bookId, borrowerId } = bookCopyData;
+  if (!getUserById(ownerId)) {
+    throw new Error("Owner does not exist")
+  }
+  if (!getBookById(bookId)) {
+    throw new Error("Book does not exist")
+  }
+  if (borrowerId && !getUserById(borrowerId)) {
+    throw new Error("Borrower does not exist")
+  }
+  updateResource(id, "BookCopy", { ownerId, bookId, borrowerId });
+}
+
+function updateUser(id, userData) {
+  const { name, email, info } = userData;
+
+  if (!name) {
+    throw new Error("Name is required");
+  }
+  if (!email) {
+    throw new Error("Email is required");
+  }
+  if (!info) {
+    throw new Error("Info is required");
+  }
+  updateResource(id, "User", { name, email, info });
+}
+
+function updateAuthor(id, authorData) {
+  const { name, bio } = authorData;
+
+  if (!name) {
+    throw new Error("Name is required");
+  }
+  if (!bio) {
+    throw new Error("Bio is required");
+  }
+  updateResource(id, "Author", { name, bio });
+}
+
+function updateBook(id, bookData) {
+  const { authorId, title, description } = bookData;
+
+  if (!getAuthorById(authorId)) {
+    throw new Error("Author does not exist");
+  }
+  if (!title) {
+    throw new Error("Title is required");
+  }
+  if (!description) {
+    throw new Error("Description is required");
+  }
+  updateResource(id, "Book", { authorId, title, description });
+}
+
 function deleteBookCopy(id) {
   deleteResource(id, "BookCopy");
-  
 }
 
 function deleteUser(id) {
@@ -642,6 +718,10 @@ const db = {
   borrowBookCopy,
   returnBookCopy,
   deleteBookCopy,
+  updateBookCopy,
+  updateUser,
+  updateAuthor,
+  updateBook,
   deleteUser,
   deleteBook,
   deleteAuthor,
