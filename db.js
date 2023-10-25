@@ -518,6 +518,13 @@ const data = {
   ]
 };
 
+function initDb() {
+  initializeNextId("Book");
+  initializeNextId("Author");
+  initializeNextId("User");
+  initializeNextId("BookCopy");
+}
+
 function findResourceByIdAndType(id, resourceType) {
   const resources = findAllResourcesByType(resourceType);
   const resource = resources.find(resource => resource.id === id);
@@ -558,6 +565,69 @@ function updateResource(id, resourceType, resourceData) {
     resourceType
   };
 }
+
+function createResource(resourceType, resourceData) {
+  const resources = findAllResourcesByType(resourceType);
+  const id = generateNextId(resourceType);
+  const createdResource = {
+    ...resourceData,
+    resourceType,
+    id
+  };
+  resources.push(createdResource);
+  return createdResource;
+}
+
+function initializeNextId(resourceType) {
+  const resources = findAllResourcesByType(resourceType);
+  if (!resources.nextId) {
+    resources.nextId = resources.length + 1;
+  }
+}
+
+function generateNextId(resourceType) {
+  const resources = findAllResourcesByType(resourceType);
+  return `${resources.nextId++}`;
+}
+
+initDb();
+
+const VALID_AVATAR_COLORS = [
+  "red",
+  "green",
+  "blue",
+  "yellow",
+  "magenta",
+  "pink",
+  "black",
+]
+
+function createUser(userDate) {
+  const { name, email, info } = userDate;
+  if (!name || name.length < 1) {
+    throw new Error("Name is required");
+  }
+  if (!email || !email.match(/@/)) {
+    throw new Error("Email is required");
+  }
+  if (!info || info.length < 1) {
+    throw new Error("Info is required");
+  }
+
+  const color = VALID_AVATAR_COLORS[Math.floor(Math.random() * VALID_AVATAR_COLORS.length)]
+  const avatarName = `${Math.random() > 0.5 ? "m" : "w"}${Math.ceil(Math.random() * 25)}`
+
+  return createResource("User", {
+    name,
+    email,
+    info,
+    avatar: {
+      imagePath: `/images/avatars/${avatarName}.png`,
+      color: color
+    } 
+  });
+}
+
 
 const getBookById = id => getResourceByIdAndType(id, "Book");
 const getAllBooks = () => getAllResourcesByType("Book");
